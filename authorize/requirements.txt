@@ -1,0 +1,7 @@
+# Function dependencies, for example:
+# package>=version
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+flask
+requests
