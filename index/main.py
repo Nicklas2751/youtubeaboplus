@@ -6,6 +6,7 @@ import flask
 
 import googleapiclient.discovery
 import google.oauth2.credentials
+from googleapiclient.errors import HttpError
 from flask import current_app as app
 app.secret_key = os.environ['FLASK_SECRET_KEY']
 
@@ -46,7 +47,10 @@ def addAllSince(request,client):
 # Calls the API for each upload and add it to the playlist with the given ID.
 def addUploadsToPlaylist(client,playlistId,uploads):
   for upload in uploads:
-    client.playlistItems().insert(body={"snippet": { "playlistId": playlistId, "resourceId": { "videoId": upload.videoId, "kind": "youtube#video" }}},part='snippet').execute()
+    try:
+      client.playlistItems().insert(body={"snippet": { "playlistId": playlistId, "resourceId": { "videoId": upload.videoId, "kind": "youtube#video" }}},part='snippet').execute()
+    except HttpError as e:
+      print("The video with the ID {} couldn't be added because of an HTTP error {}.".format(upload.videoId, e))
 
 # Order the uploads by theiry published at date
 def orderUploads(uploads):
