@@ -24,6 +24,13 @@ def index(request):
   client = googleapiclient.discovery.build(
       API_SERVICE_NAME, API_VERSION, cache_discovery=False, credentials=credentials)
   
+  flask.session['credentials'] = {'token': credentials.token,
+                                  'refresh_token': credentials.refresh_token,
+                                  'token_uri': credentials.token_uri,
+                                  'client_id': credentials.client_id,
+                                  'client_secret': credentials.client_secret,
+                                  'scopes': credentials.scopes}
+  
   return addAllSince(request,client)
 
 # Adds all videos since the video with the given HTTP GET argument lastVideoId was published to the watch later playlist.
@@ -65,25 +72,25 @@ def gatherUploadsForSubscribedChannels(client,lastVideoTime,subscribedChannels):
   
   return uploads
 
-# Gather all uploads for a channel since the given time.
+# Gather all uploaded videos for a channel since the given time.
 def getChannelUploadsSince(client,channelId,time):
-  # All activities for the channel page 1
-  activities = client.activities().list(part='snippet,contentDetails', channelId=channelId, maxResults=50, publishedAfter=time,fields='items(contentDetails/upload,snippet(title,type,publishedAt)),nextPageToken').execute()
-  activityItems = []
-  activityItems.extend(activities['items'])
+  # All search results for the channel page 1
+  videoSearch = client.search().list(part='snippet', channelId=channelId, maxResults=50, order="date", publishedAfter=time,fields='items(id/videoId,snippet(publishedAt,title)),nextPageToken').execute()
+  videoSearchResults = []
+  videoSearchResults.extend(videoSearch['items'])
   # Do while a next page token comes back
-  while 'nextPageToken' in activities:
-    activities = client.activities().list(part='snippet,contentDetails', pageToken=activities['nextPageToken'], channelId=channelId, maxResults=50, publishedAfter=time,fields='items(contentDetails/upload,snippet(title,type,publishedAt)),nextPageToken').execute()
-    activityItems.extend(activities['items'])
-  print("Found %d activities!" % (len(activityItems))) 
-
-  uploads = []
-  # Convert all activities with the type "upload" to a video upload object.
-  for activity in activityItems:
-    if activity['snippet']['type'] == 'upload':
-      uploads.append(VideoUpload(activity['contentDetails']['upload']['videoId'],activity['snippet']['publishedAt']))
+  while 'nextPageToken' in videoSearch:
+    videoSearch = client.search().list(part='snippet', pageToken=videoSearch['nextPageToken'], channelId=channelId, maxResults=50, order="date", publishedAfter=time,fields='items(id/videoId,snippet(publishedAt,title)),nextPageToken').execute()
+    videoSearchResults.extend(videoSearch['items'])
+  print("Found %d videos!" % (len(videoSearchResults))) 
   
-  return uploads
+  videos = []
+  # Convert all video search results to a video upload objects.
+  for videoSearchResult in videoSearchResults:
+    if 'id' in videoSearchResult:
+      videos.append(VideoUpload(videoSearchResult['id']['videoId'],videoSearchResult['snippet']['publishedAt']))
+  
+  return videos
 
 # Convert all subscriptions to their channel IDs.
 def subscriptionsToSubscribedChannels(subscriptions):
