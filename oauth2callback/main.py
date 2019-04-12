@@ -35,13 +35,11 @@ def oauth2callback(request):
   #     Store user's access and refresh tokens in your data store if
   #     incorporating this code into your real app.
   credentials = flow.credentials
-  flask.session['credentials'] = {
-      'token': credentials.token,
-      'refresh_token': credentials.refresh_token,
-      'token_uri': credentials.token_uri,
-      'client_id': credentials.client_id,
-      'client_secret': credentials.client_secret,
-      'scopes': credentials.scopes
-  }
+  flask.session['credentials'] = {'token': credentials.token,
+				  'refresh_token': credentials.refresh_token,
+                                  'token_uri': credentials.token_uri,
+                                  'client_id': credentials.client_id,
+                                  'client_secret': credentials.client_secret,
+                                  'scopes': credentials.scopes}
 
   return flask.redirect(os.environ['INDEX_URI'])
